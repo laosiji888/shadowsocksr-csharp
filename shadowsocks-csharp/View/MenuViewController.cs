@@ -1,4 +1,4 @@
-﻿using Shadowsocks.Controller;
+using Shadowsocks.Controller;
 using Shadowsocks.Model;
 using Shadowsocks.Properties;
 using System;
@@ -92,9 +92,11 @@ namespace Shadowsocks.View
             _notifyIcon = new NotifyIcon();
             UpdateTrayIcon();
             _notifyIcon.Visible = true;
-            _notifyIcon.ContextMenu = contextMenu1;
+
+            _notifyIcon.ContextMenu = contextMenu1;//右键点击托盘看到菜单
+
             _notifyIcon.MouseClick += notifyIcon1_Click;
-            //_notifyIcon.MouseDoubleClick += notifyIcon1_DoubleClick;
+            _notifyIcon.MouseDoubleClick += notifyIcon1_DoubleClick;//左键双击击托盘看到编辑界面
 
             updateChecker = new UpdateChecker();
             updateChecker.NewVersionFound += updateChecker_NewVersionFound;
@@ -138,7 +140,7 @@ namespace Shadowsocks.View
             MessageBox.Show(e.GetException().ToString(), String.Format(I18N.GetString("Shadowsocks Error: {0}"), e.GetException().Message));
         }
 
-        private void UpdateTrayIcon()
+        private void UpdateTrayIcon()//更新托盘图标颜色
         {
             int dpi = 96;
             using (Graphics graphics = Graphics.FromHwnd(IntPtr.Zero))
@@ -778,6 +780,27 @@ namespace Shadowsocks.View
             }
         }
 
+        private void QieHuanXiTongDaiLiMoShi() {
+            Configuration config = controller.GetCurrentConfiguration();
+
+            bool enabled = config.sysProxyMode != (int)ProxyMode.NoModify && config.sysProxyMode != (int)ProxyMode.Direct;
+            
+            if (enabled)
+            {
+                if (config.sysProxyMode == (int)ProxyMode.Global)
+                {
+                    controller.ToggleMode(ProxyMode.Pac);
+
+                }
+                else if (config.sysProxyMode == (int)ProxyMode.Pac)
+                {
+                    controller.ToggleMode(ProxyMode.Global);
+                }
+            }
+        }
+
+
+
         private void ShowSettingForm()
         {
             if (settingsForm != null)
@@ -943,7 +966,7 @@ namespace Shadowsocks.View
                 {
                     string name = dlg.FileName;
                     Configuration cfg = Configuration.LoadFile(name);
-                    if (cfg == null || (cfg.configs.Count == 1 && cfg.configs[0].server == Configuration.GetDefaultServer().server))
+                    if (cfg.configs.Count == 1 && cfg.configs[0].server == Configuration.GetDefaultServer().server)
                     {
                         MessageBox.Show("Load config file failed", "ShadowsocksR");
                     }
@@ -1014,6 +1037,37 @@ namespace Shadowsocks.View
         [DllImport("user32.dll")]
         private static extern short GetAsyncKeyState(System.Windows.Forms.Keys vKey);
 
+        private void notifyIcon1_DoubleClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                int SCA_key = GetAsyncKeyState(Keys.ShiftKey) < 0 ? 1 : 0;
+                SCA_key |= GetAsyncKeyState(Keys.ControlKey) < 0 ? 2 : 0;
+                SCA_key |= GetAsyncKeyState(Keys.Menu) < 0 ? 4 : 0;
+                if (SCA_key == 2)
+                {
+                    ShowServerLogForm();
+                }
+                else if (SCA_key == 1)
+                {
+                    ShowSettingForm();
+
+                }
+                else if (SCA_key == 4)
+                {
+                    ShowPortMapForm();
+                }
+                else
+                {
+                    ShowConfigForm(false);
+                }
+            }
+            else if (e.Button == MouseButtons.Middle)
+            {
+
+            }
+        }
+
         private void notifyIcon1_Click(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
@@ -1028,6 +1082,7 @@ namespace Shadowsocks.View
                 else if (SCA_key == 1)
                 {
                     ShowSettingForm();
+                    
                 }
                 else if (SCA_key == 4)
                 {
@@ -1035,12 +1090,14 @@ namespace Shadowsocks.View
                 }
                 else
                 {
-                    ShowConfigForm(false);
+                    //ShowConfigForm(false);
+                    QieHuanXiTongDaiLiMoShi();
                 }
             }
             else if (e.Button == MouseButtons.Middle)
             {
                 ShowServerLogForm();
+
             }
         }
 
